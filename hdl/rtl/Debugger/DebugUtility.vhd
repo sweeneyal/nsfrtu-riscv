@@ -91,7 +91,7 @@ package DebugUtility is
     end record hartinfo_t;
 
     type abstractcs_t is record
-        progbufsize : std_logic_vector(5 downto 0);
+        progbufsize : std_logic_vector(4 downto 0);
         busy        : std_logic;
         relaxedpriv : std_logic;
         cmderr      : std_logic_vector(2 downto 0);

@@ -74,15 +74,27 @@ package InstructionUtility is
     -- of the instruction, e.g. indicating the functional unit type it uses, the particular
     -- operation it performs, etc.
 
-    -- Firstly, we need to indicate what functional unit is required for the operation. 
-    -- the ALU is the integer arithmatic logic unit, and the MEXT is the M-Extension functional
-    -- unit that adds integer multiplication, division, and remainder operations.
+    -- Firstly, we need to indicate what functional unit is required for the operation.
+    -- Functional units are defined as hardware that performs a dedicated mathematical or logical
+    -- operation, that can be duplicated for parallelism and generally has no state memory that affects
+    -- future instructions. The memory unit and CSR unit do not meet this definition, but the ALU, 
+    -- multiplier/divider, and floating point units do. 
+
+    -- The ALU is the integer arithmatic logic unit, and the MEXT is the M-Extension functional
+    -- unit that adds integer multiplication, division, and remainder operations, and the FPU is the
+    -- floating point unit, adding single and double precision if instantiated.
+    -- This field is used to allow the pipeline logic to know what functional unit to expect the 
+    -- result to come from without needing an understanding of the actual operation of the instruction.
+    -- However, this field does not mean that the final result comes from this functional unit, since
+    -- the ALU is also used to compute addresses and immediates.
     type functional_unit_t is (ALU, MEXT, FPU);
 
     -- For each functional unit, there are a set of possible operations that can occur.
     -- The ALU operations are standard RISC-V instructions with the operand types abstracted,
     -- and the MEXT operations are the M-extension instructions. The functional units and 
     -- operations cannot cross over, and this is handled in the contextual_decode in the control unit.
+    -- The operation field is a catch-all for all operations. Illegal combinations (e.g. ALU and MULTIPLY)
+    -- are technically possible but should never occur if the control unit is appropriately constructed.
     type operation_t is (
         -- ALU operations
         ADD, SUBTRACT, SHIFT_LL, SHIFT_RL, SHIFT_RA, BITWISE_OR, BITWISE_XOR, BITWISE_AND, SLT, SLTU,
@@ -97,11 +109,14 @@ package InstructionUtility is
         NULL_OP
     );
 
-    -- FPU Format specifiers
+    -- FPU Format specifiers. These are used to identify if an instruction is used as a single or double
+    -- precision, otherwise it defaults to NULL_FORMAT if unused. These are kept separate from the operation
+    -- because if not, it would be a large list of operations.
     type fp_format_t is (NULL_FORMAT, SINGLE_PRECISION, DOUBLE_PRECISION);
 
-    -- Qualifiers for deviating similar instructions, namely:
-    -- FCVT, FMV, FSGNJ/N/X
+    -- Qualifiers for differentiating similar instructions, namely:
+    -- FCVT, FMV, FSGNJ/N/X. These are kept separate from operations since they would also
+    -- balloon the list of operations.
     type fp_qualifier_t is (
         SGNJN, SGNJX,
         WORD_FROM_FP, FP_FROM_WORD, UWORD_FROM_FP, FP_FROM_UWORD,
@@ -111,6 +126,8 @@ package InstructionUtility is
 
     -- Memory operations are kept separate from ALU/MEXT, because the ALU is used to compute the 
     -- address of the memory operation, and the memory operation is completed in the mem access stage.
+    -- This is an example of leveraging the ALU to support other instructions, despite the result of
+    -- the functional unit not destined for the register file.
     type mem_operation_t is (NULL_OP, LOAD, STORE);
     type mem_access_t is (
         BYTE_ACCESS, HALF_WORD_ACCESS, WORD_ACCESS, UBYTE_ACCESS, UHALF_WORD_ACCESS,
@@ -127,7 +144,7 @@ package InstructionUtility is
     type jump_type_t is (NOT_JUMP, JAL, JALR, BRANCH, MRET);
     type condition_t is (NO_COND, LESS_THAN, EQUAL, NOT_EQUAL, GREATER_THAN_EQ);
 
-    -- CSR operations
+    -- CSR operations. These are kept separate as these are not used in a functional unit.
     type csr_operation_t is (NULL_OP, ECALL, EBREAK, MRET, WFI, CSRROP);
     type csr_access_t is (NULL_OP, CSRRW, CSRRS, CSRRC);
 
@@ -135,6 +152,10 @@ package InstructionUtility is
     -- instruction where there is no destination.
     type destination_t is (REGISTERS, MEMORY, BRANCH);
 
+    -- The following struct wraps all of the expanded and interpreted fields of an instruction.
+    -- The base instruction is maintained since some parts of it are used, but generally
+    -- the enums are primarily used to direct traffic, while the instruction base is used to
+    -- index and provide operands, like shift amount and immediates.
     type decoded_instr_t is record
         -- the base decoded instruction, including all fields relevant or not
         base : instruction_t;
