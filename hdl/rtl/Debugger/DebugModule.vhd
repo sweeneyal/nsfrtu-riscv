@@ -26,6 +26,17 @@ entity DebugModule is
 end entity DebugModule;
 
 architecture rtl of DebugModule is
+    constant cDmCtrl_Address       : std_logic_vector(6 downto 0) := "0010000";
+    constant cDmStatus_Address     : std_logic_vector(6 downto 0) := "0010001";
+    constant cHartInfo_Address     : std_logic_vector(6 downto 0) := "0010010";
+    constant cAbstractCs_Address   : std_logic_vector(6 downto 0) := "0010110";
+    constant cCommand_Address      : std_logic_vector(6 downto 0) := "0010111";
+    constant cAbstractAuto_Address : std_logic_vector(6 downto 0) := "0011000";
+    constant cProgbuff0_Address    : std_logic_vector(6 downto 0) := "0100000";
+    constant cProgbuff1_Address    : std_logic_vector(6 downto 0) := "0100001";
+    constant cAuthData_Address     : std_logic_vector(6 downto 0) := "0110000";
+    constant cHaltSum0_Address     : std_logic_vector(6 downto 0) := "1000000";
+
     signal dmcontrol : dmcontrol_t := dmcontrol_t'(
             haltreq         => '0',
             resumereq       => '0',
@@ -71,7 +82,7 @@ architecture rtl of DebugModule is
             datasize   => (others => '0'),
             dataaddr   => (others => '0')
         );
-    signal haltsum1     : std_logic_vector(31 downto 0) := (others => '0');
+    signal haltsum0     : std_logic_vector(31 downto 0) := (others => '0');
 
     signal abstractcs   : abstractcs_t := abstractcs_t'(
             progbufsize => (others => '0'),
@@ -134,7 +145,7 @@ begin
                     ndmreset        => '0',
                     dmactive        => '0'
                 );
-                if (i_dmi_en = '1' and ('0' & i_dmi_addr) = x"10") then
+                if (i_dmi_en = '1' and i_dmi_addr = cDmCtrl_Address) then
                     if (i_dmi_op = WRITE_OP) then
                         -- Update the dmactive bit. Possibly this can be a different register
                         -- that eventually updates this when the reset has been completed for all other
@@ -143,24 +154,16 @@ begin
                     end if;
                 end if;
             else
-                if (i_dmi_en = '1' and ('0' & i_dmi_addr) = x"10") then
+                if (i_dmi_en = '1' and i_dmi_addr = cDmCtrl_Address) then
                     -- Writes are performed here, while reads are performed elsewhere
                     if (i_dmi_op = WRITE_OP) then
-                        -- * writes to these bits are ignored if an abstract command is executing:
-                        dmcontrol.haltreq         <= i_dmi_wdata(31); -- * 
-                        dmcontrol.resumereq       <= i_dmi_wdata(30); -- *
-                        dmcontrol.hartreset       <= i_dmi_wdata(29);
-                        dmcontrol.ackhavereset    <= i_dmi_wdata(28); -- *
-                        dmcontrol.ackunavail      <= i_dmi_wdata(27);
-                        dmcontrol.hasel           <= '0'; -- we do not implement more than one hart.
-                        dmcontrol.hartsello       <= (others => '0'); -- *; the only existing hart is hart0
-                        dmcontrol.hartselhi       <= (others => '0'); -- *
-                        -- this bit sets keepalive, unless clrkeepalive is simultaneously set.
-                        dmcontrol.setkeepalive    <= i_dmi_wdata(5) and not i_dmi_wdata(4);
-                        dmcontrol.clrkeepalive    <= i_dmi_wdata(4);
-                        -- this bit sets resethaltreq, unless clrresethaltreq is simultaneously set.
-                        dmcontrol.setresethaltreq <= i_dmi_wdata(3) and not i_dmi_wdata(2); -- *;
-                        dmcontrol.clrresethaltreq <= i_dmi_wdata(2); -- *;
+                        if (abstractcs.busy = '0') then
+                            -- * writes to these bits are ignored if an abstract command is executing:
+                            dmcontrol.haltreq      <= i_dmi_wdata(31); -- * 
+                            dmcontrol.resumereq    <= i_dmi_wdata(30); -- *
+                            dmcontrol.ackhavereset <= i_dmi_wdata(28); -- *
+                            --dmcontrol.hartsel      <= (others => '0'); -- *; the only existing hart is hart0
+                        end if;
                         -- 
                         dmcontrol.ndmreset        <= i_dmi_wdata(1);
                         -- dmactive 
@@ -170,6 +173,25 @@ begin
             end if;
         end if;
     end process DmControlStateMachine;
+
+    CommandStateMachine: process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            if (dmcontrol.dmactive = '0') then
+                
+            else
+                if (i_dmi_en = '1' and i_dmi_addr = cCommand_Address) then
+                    -- Writes are performed here, while reads are performed elsewhere
+                    if (i_dmi_op = WRITE_OP) then
+                        if (abstractcs.busy = '0') then
+                            command.cmdtype <= i_dmi_wdata(31 downto 24);
+                            command.control <= i_dmi_wdata(23 downto 0);
+                        end if;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process CommandStateMachine;
 
     DmStatusStateMachine: process(i_clk)
     begin

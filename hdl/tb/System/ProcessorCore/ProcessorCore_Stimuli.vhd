@@ -132,7 +132,7 @@ begin
             elsif run("t_matmult") then
                 info("Running matmult test");
 
-                file_open(file_instr, "./hdl/tb/ProcessorCore/matmult.hex", read_mode);
+                file_open(file_instr, "./hdl/tb/System/ProcessorCore/matmult.hex", read_mode);
 
                 while not endfile(file_instr) loop
                     readline(file_instr, iline);

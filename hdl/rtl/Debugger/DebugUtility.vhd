@@ -136,6 +136,33 @@ package DebugUtility is
     type dmi_op_t is (NULL_OP, READ_OP, WRITE_OP);
     function to_op(s : std_logic_vector(1 downto 0)) return dmi_op_t;
 
+    type hart_command_t is record
+        -- section 3.2, paragraph 2 and paragraph 4
+        ackhavereset : std_logic;
+        -- section 3.5, paragraph 2
+        haltreq      : std_logic;
+        --
+        resumereq : std_logic;
+
+        command : command_t;
+
+        arg0 : std_logic_vector(31 downto 0);
+        arg1 : std_logic_vector(31 downto 0);
+        arg2 : std_logic_vector(31 downto 0);
+    end record hart_command_t;
+
+    type hart_state_t is (NONEXISTENT, UNAVAIL, RUNNING, HALTED);
+    type hart_status_t is record
+        -- section 3.2, paragraph 2 and paragraph 4
+        havereset : std_logic;
+        -- section 3.4
+        state     : hart_state_t;
+
+        arg0      : std_logic_vector(31 downto 0);
+        arg1      : std_logic_vector(31 downto 0);
+        arg2      : std_logic_vector(31 downto 0);
+    end record hart_status_t;
+
 end package DebugUtility;
 
 package body DebugUtility is
