@@ -37,7 +37,115 @@ begin
         test_runner_setup(runner, runner_cfg);
         while test_suite loop
             if run("t_basic") then
-                check(false);
+                report "Running ADD";
+                instr_i.operation <= ADD;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 255 loop
+                        opB_i <= to_slvu(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = to_slvu(ii + jj, 32));
+                    end loop;
+                end loop;
+
+                report "Running SUB";
+                instr_i.operation <= SUBTRACT;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 255 loop
+                        opB_i <= to_slvu(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = to_slv(ii - jj, 32));
+                    end loop;
+                end loop;
+
+                report "Running SHIFT_LL";
+                instr_i.operation <= SHIFT_LL;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 31 loop
+                        opB_i <= to_slvu(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = std_logic_vector(shift_left(unsigned(opA_i), jj)));
+                    end loop;
+                end loop;
+
+                report "Running SHIFT_RA";
+                instr_i.operation <= SHIFT_RA;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 31 loop
+                        opB_i <= to_slvu(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = std_logic_vector(shift_right(signed(opA_i), jj)));
+                    end loop;
+                end loop;
+
+                report "Running SHIFT_RL";
+                instr_i.operation <= SHIFT_RL;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 31 loop
+                        opB_i <= to_slvu(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = std_logic_vector(shift_right(unsigned(opA_i), jj)));
+                    end loop;
+                end loop;
+
+                report "Running SLT";
+                instr_i.operation <= SLT;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in -255 to 255 loop
+                        opB_i <= to_slv(jj, 32);
+                        wait for 100 ps;
+                        check(res_o(0) = bool2bit(ii < jj));
+                    end loop;
+                end loop;
+
+                report "Running SLTU";
+                instr_i.operation <= SLTU;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 255 loop
+                        opB_i <= to_slv(jj, 32);
+                        wait for 100 ps;
+                        check(res_o(0) = bool2bit(ii < jj));
+                    end loop;
+                end loop;
+
+                report "Running BITWISE_OR";
+                instr_i.operation <= BITWISE_OR;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 255 loop
+                        opB_i <= to_slv(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = (opA_i or opB_i));
+                    end loop;
+                end loop;
+
+                report "Running BITWISE_XOR";
+                instr_i.operation <= BITWISE_XOR;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 255 loop
+                        opB_i <= to_slv(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = (opA_i xor opB_i));
+                    end loop;
+                end loop;
+
+                report "Running BITWISE_AND";
+                instr_i.operation <= BITWISE_AND;
+                for ii in 0 to 255 loop
+                    opA_i <= to_slvu(ii, 32);
+                    for jj in 0 to 255 loop
+                        opB_i <= to_slv(jj, 32);
+                        wait for 100 ps;
+                        check(res_o = (opA_i and opB_i));
+                    end loop;
+                end loop;
             end if;
         end loop;
         test_runner_cleanup(runner);

@@ -13,6 +13,7 @@ package CommonUtility is
     function reverse (a: in std_logic_vector) return std_logic_vector;
 
     function to_slv(intVal : integer; size : natural) return std_logic_vector;
+    function to_slvu(intVal : natural; size : natural) return std_logic_vector;
     function to_slv(a : string) return std_logic_vector;
     function to_slv(c : character) return std_logic_vector;
     function to_integer(vector : std_logic_vector) return integer;
@@ -65,6 +66,11 @@ package body CommonUtility is
     function to_slv(intVal : integer; size : natural) return std_logic_vector is
     begin
         return std_logic_vector(to_signed(intVal, size));
+    end function;
+
+    function to_slvu(intVal : natural; size : natural) return std_logic_vector is
+    begin
+        return std_logic_vector(to_unsigned(intVal, size));
     end function;
 
     -- Uses a hex string to slv, not bitstring
