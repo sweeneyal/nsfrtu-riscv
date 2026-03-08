@@ -181,10 +181,7 @@ scratch
 *.jou
 .Xil
 
-docs/latex/notes/*
-!docs/latex/notes/*.tex
-!docs/latex/notes/*.bib
-!docs/latex/notes/*.png
+docs/latex
 
 sw/**/*.bin
 sw/**/*.elf
